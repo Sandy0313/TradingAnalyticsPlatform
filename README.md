@@ -1,1 +1,3 @@
-The TradingAnalyticsPlatform is a Python-based backend server designed to facilitate stock market analysis. With the power of Flask, it offers a robust web server architecture to provide APIs for fetching real-time stock data, conducting comprehensive data analysis, and returning insightful analysis results. The platform seamlessly integrates with databases for efficient request handling and data storage, making it an essential tool for traders and analysts seeking to leverage market data for informed decision-making.
+## TradingAnalyticsPlatform
+
+This project helps users analyze stock data and make trading decisions using TypeScript for the frontend interface, Python for backend processing, and Go for real-time data analysis.
