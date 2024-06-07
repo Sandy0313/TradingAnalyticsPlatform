@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="tradingAnalytics.js" defer></script>
+    <title>Trading Analytics Platform</title>
+</head>
+<body>
+    <h1>Trading Analytics Platform</h1>
+    <input type="text" id="stockSymbol" placeholder="Enter Stock Symbol">
+    <button id="fetchData">Get Stock Data</button>
+    <div id="stockData"></div>
+</body>
+</html>
+```
+```typescript
+import axios from 'axios';
+
+const apiEndpoint: string = process.env.API_ENDPOINT || 'http://localhost:3000/api/stocks';
+
+interface StockData {
+    symbol: string;
+    price: number;
+    analysis: string;
+}
+
+async function fetchStockData(symbol: string): Promise<StockData> {
+    try {
+        const response = await axios.get(`${apiEndpoint}/${symbol}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching stock data:', error);
+        throw error;
+    }
+}
+
+function displayStockData(stockData: StockData): void {
+    const stockDataDiv: HTMLElement | null = document.getElementById('stockData');
+    if(stockDataDiv === null) return;
+
+    stockDataDiv.innerHTML = `
+        <p>Symbol: ${stockData.symbol}</p>
+        <p>Price: $${stockData.price.toFixed(2)}</p>
+        <p>Analysis: ${stockData.analysis}</p>
+    `;
+}
+
+document.getElementById('fetchData')?.addEventListener('click', async () => {
+    const stockSymbolInput: HTMLInputElement | null = document.getElementById('stockSymbol') as HTMLInputElement;
+    if (!stockSymbolInput) return;
+    
+    const stockSymbol = stockSymbolInput.value;
+    if (!stockSymbol) {
+        alert('Please enter a stock symbol');
+        return;
+    }
+    
+    try {
+        const stockData: StockData = await fetchStockData(stockSymbol);
+        displayStockData(stockData);
+    } catch (error) {
+        console.error('Failed to fetch stock data:', error);
+        alert('Failed to fetch stock data');
+    }
+});
