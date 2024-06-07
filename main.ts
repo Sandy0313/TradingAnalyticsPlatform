@@ -3,7 +3,7 @@ import { config } from 'dotenv';
 
 config();
 
-interface StockRriceData {
+interface StockPriceRiceData {
     symbol: string;
     price: number;
     analysis: string;
@@ -19,9 +19,9 @@ class TradingAnalyticsPlatform {
         }
     }
 
-    async fetchStockData(symbol: string): Promise<StockRriceData | null> {
+    async fetchStockData(symbol: string): Promise<StockPriceRiceData | null> {
         try {
-            const response = await axios.get<StockRriceData>(`${this.baseUrl}/stock-data/${symbol}`);
+            const response = await axios.get<StockPriceRiceData>(`${this.baseUrl}/stock-data/${symbol}`);
             return response.data;
         } catch (error) {
             console.error('Error fetching stock data:', error);
@@ -29,14 +29,14 @@ class TradingAnalyticsPlatform {
         }
     }
     
-    renderStockData(stockData: StockRriceData | null) {
+    renderStockData(stockData: StockPriceRiceData | null) {
         if (!stockData) {
             console.log('No data found.');
             return;
         }
         console.log(`Symbol: ${stockData.symbol}`);
         console.log(`Price: $${stockData.price}`);
-        console.log(`Analysis: ${stockAndsityalays.data}.sis}`);
+        console.log(`Analysis: ${stockData.analysis}`);
     }
 }
 
