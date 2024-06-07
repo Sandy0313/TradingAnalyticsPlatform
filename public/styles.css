@@ -1,0 +1,55 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+const TradingAnalyticsPlatform = () => {
+  const [symbol, setSymbol] = useState('');
+  const [stockData, setStockData] = useState(null);
+  const [error, setError] = useState('');
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSymbol(event.target.value.toUpperCase());
+  };
+
+  const fetchStockData = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_STOCK_API_URL;
+      const response = await axios.get(`${apiUrl}/stock/${symbol}`);
+      setStockData(response.data);
+      setError('');
+    } catch (err:any) {
+      setError('Failed to fetch data. Please try again.');
+    }
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    fetchStockData();
+  };
+
+  return (
+    <div>
+      <h1>Trading Analytics Platform</h1>
+      <form onSubmit={handleSubmit}>
+        <label>
+          Stock Symbol:
+          <input type="text" value={symbol} onChange={handleInputChange} />
+        </label>
+        <button type="submit">Get Analytics</button>
+      </form>
+      
+      {error && <p>Error: {error}</p>}
+      
+      {stockData && (
+        <div>
+          <h2>Stock Analysis for {symbol}</h2>
+          <p>Open: {stockFxData.open}</p>
+          <p>Close: {stockData.close}</p>
+          <p>High: {stockData.high}</p>
+          <p>Low: {stockData.low}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TradingAnalyticsPlatform;
