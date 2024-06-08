@@ -11,56 +11,53 @@
     <input type="text" id="stockSymbol" placeholder="Enter Stock Symbol">
     <button id="fetchData">Get Stock Data</button>
     <div id="stockData"></div>
+    <br>
+    <a href="author.html">About the Author</a>
+</body>
+</html>
+```
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About the Author</title>
+</head>
+<body>
+    <h1>About the Author</h1>
+    <p id="authorInfo"></p>
+    <a href="index.html">Back to Home</a>
+    <script src="authorInfo.js" defer></script>
 </body>
 </html>
 ```
 ```typescript
-import axios from 'axios';
-
-const apiEndpoint: string = process.env.API_ENDPOINT || 'http://localhost:3000/api/stocks';
-
-interface StockData {
-    symbol: string;
-    price: number;
-    analysis: string;
+interface AuthorInfo {
+    name: string;
+    bio: string;
+    contact: string;
 }
 
-async function fetchStockData(symbol: string): Promise<StockData> {
-    try {
-        const response = await axios.get(`${apiEndpoint}/${symbol}`);
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching stock data:', error);
-        throw error;
-    }
+function fetchAuthorInfo(): AuthorInfo {
+    return {
+        name: "John Doe",
+        bio: "Financial Analyst and Developer of Trading Analytics Platform.",
+        contact: "johndoe@example.com"
+    };
 }
 
-function displayStockData(stockData: StockData): void {
-    const stockDataDiv: HTMLElement | null = document.getElementById('stockData');
-    if(stockDataDiv === null) return;
+function displayAuthorInfo(): void {
+    const authorInfo: AuthorInfo = fetchAuthorIdocument.getElementById('authorInfo');
+    if(authorInfoDiv === null) return;
 
-    stockDataDiv.innerHTML = `
-        <p>Symbol: ${stockData.symbol}</p>
-        <p>Price: $${stockData.price.toFixed(2)}</p>
-        <p>Analysis: ${stockData.analysis}</p>
+    authorInfoDiv.innerHTML = `
+        <p>Name: ${authorInfo.name}</p>
+        <p>Bio: ${authorInfo.bio}</p>
+        <p>Contact: <a href = "mailto:${authorInfo.contact}">${authorInfo.contact}</a></p>
     `;
 }
 
-document.getElementById('fetchData')?.addEventListener('click', async () => {
-    const stockSymbolInput: HTMLInputElement | null = document.getElementById('stockSymbol') as HTMLInputElement;
-    if (!stockSymbolInput) return;
-    
-    const stockSymbol = stockSymbolInput.value;
-    if (!stockSymbol) {
-        alert('Please enter a stock symbol');
-        return;
-    }
-    
-    try {
-        const stockData: StockData = await fetchStockData(stockSymbol);
-        displayStockData(stockData);
-    } catch (error) {
-        console.error('Failed to fetch stock data:', error);
-        alert('Failed to fetch stock data');
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    displayAuthorInfo();
 });
