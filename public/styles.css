@@ -1,12 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+const styles = {
+  container: {
+    fontFamily: 'Arial, sans-serif',
+    maxWidth: '600px',
+    margin: '0 auto',
+    padding: '20px',
+    backgroundColor: '#f5f5f5',
+    borderRadius: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    marginBottom: '20px',
+  },
+  input: {
+    padding: '10px',
+    margin: '10px 0',
+    borderRadius: '4px',
+    border: '1px solid #ddd',
+    fontSize: '16px',
+  },
+  button: {
+    padding: '10px 20px',
+    fontSize: '16px',
+    backgroundColor: '#007bff',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+  },
+  error: {
+    color: 'red',
+    margin: '10px 0',
+  },
+  stockInfo: {
+    backgroundColor: '#fff',
+    padding: '20px',
+    borderRadius: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  },
+};
+
 const TradingAnalyticsPlatform = () => {
   const [symbol, setSymbol] = useState('');
   const [stockData, setStockData] = useState(null);
   const [error, setError] = useState('');
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (event) => {
     setSymbol(event.target.value.toUpperCase());
   };
 
@@ -16,33 +59,33 @@ const TradingAnalyticsPlatform = () => {
       const response = await axios.get(`${apiUrl}/stock/${symbol}`);
       setStockData(response.data);
       setError('');
-    } catch (err:any) {
+    } catch (err) {
       setError('Failed to fetch data. Please try again.');
     }
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event) => {
     event.preventDefault();
     fetchStockData();
   };
 
   return (
-    <div>
+    <div style={styles.container}>
       <h1>Trading Analytics Platform</h1>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} style={styles.form}>
         <label>
           Stock Symbol:
-          <input type="text" value={symbol} onChange={handleInputChange} />
+          <input style={styles.input} type="text" value={symbol} onChange={handleInputChange} />
         </label>
-        <button type="submit">Get Analytics</button>
+        <button style={styles.button} type="submit">Get Analytics</button>
       </form>
       
-      {error && <p>Error: {error}</p>}
+      {error && <p style={styles.error}>Error: {error}</p>}
       
       {stockData && (
-        <div>
+        <div style={styles.stockInfo}>
           <h2>Stock Analysis for {symbol}</h2>
-          <p>Open: {stockFxData.open}</p>
+          <p>Open: {stockData.open}</p>
           <p>Close: {stockData.close}</p>
           <p>High: {stockData.high}</p>
           <p>Low: {stockData.low}</p>
