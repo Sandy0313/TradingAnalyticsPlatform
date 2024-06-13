@@ -1,122 +1,112 @@
 import os
 import requests
-import pandas as pd
+import pandas as.pd
 from datetime import datetime
 
 ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
 
-def fetch_stock_data(symbol):
-    url = f'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&apikey={ALPHA_VANTAGE_API_KEY}'
+def retrieve_stock_data(symbol):
+    endpoint_url = f'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&apikey={ALPHA_VANTAGE_API_KEY}'
     try:
-        response = requests.get(url)
-        response.raise_for_status()  # Raises an HTTPError if the HTTP request returned an unsuccessful status code.
+        response = requests.get(endpoint_url)
+        response.raise_for_status()  # Raises an HTTPError for bad responses.
         data = response.json()
-        time_series_data = data.get('Time Series (Daily)', {})
-    except requests.exceptions.HTTPError as errh:
-        print("An Http Error occurred:", repr(errh))
+        daily_time_series = data.get('Time Series (Daily)', {})
+    except requests.exceptions.HTTPError as http_err:
+        print("HTTP Error occurred:", repr(http_err))
         return None
-    except requests.exceptions.ConnectionError as errc:
-        print("An Error Connecting to the API occurred:", repr(errc))
+    except requests.exceptions.ConnectionError as conn_err:
+        print("Connection Error occurred:", repr(conn_err))
         return None
-    except requests.exceptions.Timeout as errt:
-        print("A Timeout Error occurred:", repr(errt))
+    except requests.exceptions.Timeout as timeout_err:
+        print("Timeout Error occurred:", repr(timeout_err))
         return None
-    except requests.exceptions.RequestException as err:
-        print("An Unknown Error occurred:", repr(err))
+    except requests.exceptions.RequestException as req_err:
+        print("Other Error occurred:", repr(req_err))
         return None
 
-    df = pd.DataFrame(columns=['Date', 'Open', 'High', 'Low', 'Close', 'Volume'])
+    stock_frame = pd.DataFrame(columns=['Date', 'Open', 'High', 'Low', 'Close', 'Volume'])
 
-    try:
-        for date, daily_data in time_series_data.items():
-            row = {
-                'Date': date,
-                'Open': daily_data['1. open'],
-                'High': daily_data['2. high'],
-                'Low': daily_data['3. low'],
-                'Close': daily_data['4. close'],
-                'Volume': daily_data['5. volume'],
-            }
-            df = df.append(row, ignore_index=True)
-
-    except Exception as e:
-        print(f"An error occurred while processing the data: {e}")
-        return None
+    for date, daily_values in daily_time_series.items():
+        day_data = {
+            'Date': date,
+            'Open': daily_values['1. open'],
+            'High': daily_values['2. high'],
+            'Low': daily_values['3. low'],
+            'Close': daily_values['4. close'],
+            'I[k]': daily_values['5. volume'],
+        }
+        stock_frame = stock_frame.append(day_data, ignore_index=True)
 
     try:
-        df['Date'] = pd.to_datetime(df['Date'])
-    except Exception as e:
-        print(f"Error converting Date column to datetime: {e}")
+        stock_frame['Date'] = pd.to_datetime(stock_frame['Date'])
+    except Exception as date_conv_err:
+        print(f"Error converting Date to datetime format: {date_conv_err}")
         return None
 
-    df.sort_values(by='Date', inplace=True)
-    return df
+    stock_frame.sort_values(by='Date', inplace=True)
+    return stock_frame
 
-def analyze_trends(stock_dataframe):
+def identify_market_trends(stock_dataframe):
     if stock_dataframe is None:
-        print("No data to analyze")
+        print("Missing data for analysis")
         return None
 
-    stock_dataframe['SMA_20'] = stock_dataframe['Close'].rolling(window=20).mean()
-    stock_dataframe['SMA_50'] = stock_dataframe['Close'].rolling(window=50).mean()
+    stock_dataframe['20-Day SMA'] = stock_dataframe['Close'].rolling(window=20).mean()
+    stock_dataframe['50-Day SMA'] = stock_dataframe['Close'].rolling(window=50).mean()
 
-    signal_buy = []
-    signal_sell = []
-    flag = -1 
+    buy_signals = []
+    sell_signals = []
+    trend = -1  # -1 indicates no trend, 1 indicates uptrend, 0 indicates downtrend
 
-    try:
-        for i in range(len(stock_dataframe)):
-            if stock_dataframe['SMA_20'][i] > stock_dataframe['SMA_50'][i] and flag != 1:
-                signal_buy.append(stock_dataframe['Close'][i])
-                signal_sell.append(float('nan'))
-                flag = 1
-            elif stock_dataframe['SMA_20'][i] < stock_dataframe['SMA_50'][i] and flag != 0:
-                signal_sell.append(stock_dataframe['Close'][i])
-                signal_buy.append(float('nan'))
-                flag = 0
-            else:
-                signal_sell.append(float('nan'))
-                signal_buy.append(float('nan'))
+    for i in range(len(stock_dataframe)):
+        if stock_dataframe['20-Day SMA'][i]  > stock_dataframe['50-Day SMA'][i] and trend != 1:
+            buy_signals.append(stock_dataframe['Close'][i])
+            sell_signals.append(float('nan'))
+            trend = 1
+        elif stock_dataframe['20-Day SMA'][i] < stock_dataframe['50-Day SMA'][i] and trend != 0:
+            sell_signals.append(stock_dataframe['Close'][i])
+            buy_signals.append(float('nan'))
+            trend = 0
+        else:
+            sell_signals.append(float('nan'))
+            buy_signals.append(float('nan'))
 
-    except Exception as e:
-        print(f"An error occurred while analyzing trends: {e}")
-        return None
-
-    stock_dataframe['Buy_Signal_Price'] = signal_buy
-    stock_dataframe['Sell_Signal_Price'] = signal_sell
+    stock_dataframe['Buy Signal Price'] = buy_signals
+    stock_dataframe['Sell Signal Price'] = sell_signals
 
     return stock_dataframe
 
-def generate_report(stock_dataframe, symbol):
+def generate_analysis_report(stock_dataframe, symbol):
     if stock_dataframe is None:
-        return "An error occurred. Unable to generate report."
+        return "Failed to generate report due to data unavailability."
 
-    report = f"Stock Analysis Report for {symbol}\n"
-    report += "---------------------------------\n"
-    latest_data = stock_dataframe.iloc[-1]
-    report += f"Latest Close Price: {latest_data['Close']}\n"
-    report += f"Latest SMA 20: {latest_data['SMA_20']}\n"
-    report += f"Latest SMA 50: {latest_data['SMA_50']}\n"
+    report = f"Stock Market Analysis Report for {symbol}\n"
+    report += "---------------------------------------\n"
+    most_recent_data = stock_dataframe.iloc[-1]
+    report += f"Most Recent Close Price: {most_recent_data['Close']}\n"
+    report += f"Recent 20-Day SMA: {most_recent_data['20-Day SMA']}\n"
+    report += f"Recent 50-Day SMA: {most_recent_data['50-Day SMA']}\n"
 
-    if latest_data['SMA_20'] > latest_data['SMA_50']:
-        report += "Recommendation: Potential Buy Signal Detected\n"
+    if most_recent_data['20-Day SMA'] > most_recent_data['50-Day SMA']:
+        report += "Action Suggestion: Consider Buying - Positive trend detected\n"
     else:
-        report += "Recommendation: Potential Sell Signal Detected\n"
+        report += "Action Suggestion: Consider Selling - Negative trend detected\n"
 
-    trending = "upward" if latest_data['SMA_20'] > latest_data['SMA_50'] else "downward"
-    report += f"Overall Trending: {trending}\n"
+    trend_direction = "upwards" if most_recent_data['20-Day SMA'] > most_recent_data['50-Day SMA'] else "downwards"
+    report += f"Overall Trend: {trend_direction}\n"
 
     return report
 
 if __name__ == "__main__":
-    symbol = 'AAPL'
-    df = fetch_stock_data(symbol)
-    if df is not None:
-        df_analyzed = analyze_trends(df)
-        if df_analyzed is not None:
-            report = generate_report(df_analyzed, symbol)
-            print(report)
+    stock_symbol = 'AAPL'
+    df_stock = retrieve_stock_data(stock_symbol)
+    if df_stock is not None:
+        analyzed_data = identify_market_trends(df_stock)
+        if analyzed_data is not None:
+            final_report = generate_analysis_report(analyzed_data, stock_symbol)
+            print(final_report)
         else:
-            print("Error in trend analysis. No report generated.")
+            print("Failed in market trend identification. No report generated.")
     else:
-        print("Error fetching stock data. No report generated.")
+        print("Failed to retrieve stock data. No report generated.")
