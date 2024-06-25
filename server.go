@@ -10,12 +10,12 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type StockData struct {
+type Stock struct {
 	Ticker string  `json:"ticker"`
 	Price  float64 `json:"price"`
 }
 
-var stockDatabase = make(map[string]StockData)
+var stocks = make(map[string]Stock)
 
 func main() {
 	err := godotenv.Load()
@@ -23,54 +23,54 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	port := os.Getenv("SERVER_PORT")
-	if port == "" {
+	serverPort := os.Getenv("SERVER_PORT")
+	if serverPort == "" {
 		log.Fatal("$SERVER_PORT must be set")
 	}
 
 	router := mux.NewRouter()
 
-	router.HandleFunc("/stocks", GetStocks).Methods("GET")
-	router.HandleFunc("/stock/{ticker}", GetStock).Methods("GET")
-	router.HandleFunc("/stock", CreateOrUpdateStock).Methods("POST")
-	router.HandleFunc("/stock/{ticker}", DeleteStock).Methods("DELETE")
+	router.HandleFunc("/stocks", RetrieveAllStocks).Methods("GET")
+	router.HandleFunc("/stock/{ticker}", RetrieveStock).Methods("GET")
+	router.HandleFunc("/stock", AddOrUpdateStock).Methods("POST")
+	router.HandleFunc("/stock/{ticker}", RemoveStock).Methods("DELETE")
 
-	log.Printf("Server starting on port %s", port)
-	log.Fatal(http.ListenAndServe(":"+port, router))
+	log.Printf("Server starting on port %s", serverPort)
+	log.Fatal(http.ListenAndServe(":"+serverPort, router))
 }
 
-func GetStocks(w http.ResponseWriter, r *http.Request) {
+func RetrieveAllStocks(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(stockDatabase)
+	json.NewEncoder(w).Encode(stocks)
 }
 
-func GetStock(w http.ResponseWriter, r *http.Request) {
+func RetrieveStock(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r) 
-	if stock, ok := stockDatabase[params["ticker"]]; ok {
+	if stock, exists := stocks[params["ticker"]]; exists {
 		json.NewEncoder(w).Encode(stock)
 	} else {
 		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(&StockData{})
+		json.NewEncoder(w).Encode(Stock{})
 	}
 }
 
-func CreateOrUpdateStock(w http.ResponseWriter, r *http.Request) {
+func AddOrUpdateStock(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	var stock StockData
-	if err := json.NewDecoder(r.Body).Decode(&stock); err != nil {
+	var stockInput Stock
+	if err := json.NewDecoder(r.Body).Decode(&stockInput); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	stockDatabase[stock.Ticker] = stock
-	json.NewEncoder(w).Encode(stock)
+	stocks[stockInput.Ticker] = stockInput
+	json.NewEncoder(w).Encode(stockInput)
 }
 
-func DeleteStock(w http.ResponseWriter, r *http.Request) {
+func RemoveStock(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
-	if _, ok := stockDatabase[params["ticker"]]; ok {
-		delete(stockDatabase, params["ticker"])
+	if _, exists := stocks[params["ticker"]]; exists {
+		delete(stocks, params["ticker"])
 		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusNotFound)
