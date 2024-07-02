@@ -36,11 +36,15 @@ func LoadStockData(filePath string) ([]StockData, error) {
 	defer file.Close()
 
 	r := csv.NewReader(file)
-	_, err = r.Read()
+	_, err = r.Read() // Skip header
 	if err != nil {
 		return nil, err
 	}
 
+	return parseCSVRecordsToStockData(r)
+}
+
+func parseCSVRecordsToStockData(r *csv.Reader) ([]StockData, error) {
 	var records []StockData
 
 	for {
@@ -52,50 +56,75 @@ func LoadStockData(filePath string) ([]StockData, error) {
 			return nil, err
 		}
 
-		date, _ := time.Parse("2006-01-02", record[0])
-		open, _ := strconv.ParseFloat(record[1], 64)
-		high, _ := strconv.ParseFloat(record[2], 64)
-		low, _ := strconv.ParseFloat(record[3], 64)
-		close, _ := strconv.ParseFloat(record[4], 64)
-		volume, _ := strconv.ParseInt(record[5], 10, 64)
-		adjClose, _ := strconv.ParseFloat(record[6], 64)
+		data, err := parseRecordToStockData(record)
+		if err != nil {
+			return nil, err // Consider logging or collecting errors here instead of returning immediately
+		}
 
-		data := StockData{date, open, high, low, close, volume, adjClose}
 		records = append(records, data)
 	}
 
 	return records, nil
 }
 
+func parseRecordToStockData(record []string) (StockData, error) {
+	date, err := time.Parse("2006-01-02", record[0])
+	if err != nil {
+		return StockData{}, err
+	}
+	open, err := strconv.ParseFloat(record[1], 64)
+	high, err := strconv.ParseFloat(record[2], 64)
+	low, err := strconv.ParseFloat(record[3], 64)
+	close, err := strconv.ParseFloat(record[4], 64)
+	volume, err := strconv.ParseInt(record[5], 10, 64)
+	adjClose, err := strconv.ParseFloat(record[6], 64)
+	if err != nil {
+		return StockData{}, err // This returns the last error, consider aggregating errors if needed
+	}
+
+	return StockData{Date: date, Open: open, High: high, Low: low, Close: close, Volume: volume, AdjClose: adjClose}, nil
+}
+
 func CalculateMovingAverage(data []StockData, period int) ([]float64, error) {
-	var movingAverages []float64
 	if period <= 0 || period > len(data) {
 		return nil, fmt.Errorf("invalid period")
 	}
 
+	var movingAverages []float64
+
 	for i := period; i <= len(data); i++ {
-		sum := 0.0
-		for j := i - period; j < i; j++ {
-			sum += data[j].Close
-		}
+		sum := calculateSumForPeriod(data[i-period : i])
 		movingAverages = append(movingAverages, sum/float64(period))
 	}
 
 	return movingAverages, nil
 }
 
+func calculateSumForPeriod(data []StockData) float64 {
+	sum := 0.0
+	for _, d := range data {
+		sum += d.Close
+	}
+	return sum
+}
+
 func CalculateVolatility(data []StockData) ([]float64, error) {
-	var volatilities []float64
 	if len(data) <= 1 {
 		return nil, fmt.Errorf("not enough data")
 	}
+
+	return calculateVolatilities(data), nil
+}
+
+func calculateVolatilities(data []StockData) []float64 {
+	var volatilities []float64
 
 	for i := 1; i < len(data); i++ {
 		volatility := (data[i].High - data[i].Low) / data[i-1].Close * 100
 		volatilities = append(volatilities, volatility)
 	}
 
-	return volatilities, nil
+	return volatilities
 }
 
 func GenerateRealTimeAnalysis(data []StockData) {
