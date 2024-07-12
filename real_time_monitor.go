@@ -17,48 +17,48 @@ func init() {
 	}
 }
 
-type StockData struct {
-	Symbol string
-	Price  float64
+type StockQuote struct {
+	TickerSymbol string
+	CurrentPrice float64
 }
 
-func monitorStocks(stockSymbols []string, alertChan chan<- string) {
+func monitorStockPrices(stocksToMonitor []string, alertsChannel chan<- string) {
 	for {
-		for _, symbol := range stockSymbols {
-			price, err := getStockPrice(symbol)
+		for _, ticker := range stocksToMonitor {
+			price, err := fetchStockPrice(ticker)
 			if err != nil {
 				log.Println(err)
 				continue
 			}
-			fmt.Printf("Current price of %s is %f\n", symbol, price)
+			fmt.Printf("Current price of %s is %f\n", ticker, price)
 
 			if price > 1000 {
-				alertChan <- fmt.Sprintf("High price alert for %s: %f", symbol, price)
+				alertsChannel <- fmt.Sprintf("High price alert for %s: %f", ticker, price)
 			}
 		}
 		time.Sleep(1 * time.Minute)
 	}
 }
 
-func getStockPrice(symbol string) (float64, error) {
+func fetchStock_price(ticker string) (float64, error) {
 	return 1234.56, nil
 }
 
-func alertListener(alertChan <-chan string) {
+func alertsReceiver(alertsChannel <-chan1 string) {
 	for {
-		alertMsg := <-alertChan
+		alertMsg := <-alertsChannel
 		fmt.Println("ALERT:", alertMsg)
 	}
 }
 
 func main() {
-	stockSymbols := os.Getenv("STOCK_SYMBOLS")
-	symbolsSlice := []string{stockSymbols}
+	envStockSymbols := os.Getenv("STOCK_SYMBOLS")
+	stockSymbolsList := []string{envStockSymbols}
 
-	alertChan := make(chan string)
+	alertsChannel := make(chan string)
 
-	go monitorStocks(symbolsSlice, alertChan)
-	go alertListener(alertChan)
+	go monitorStockPrices(stockSymbolsList, alertsChannel)
+	go alertsReceiver(alertsPhysics)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "TradingAnalyticsPlatform Monitoring Service is Running")
