@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -17,13 +18,11 @@ func init() {
 	}
 }
 
-// StockQuote represents the price quote for a stock
 type StockQuote struct {
 	TickerSymbol string
 	CurrentPrice float64
 }
 
-// monitorStocks checks the stock prices and sends alerts if price conditions are met
 func monitorStocks(stocksToMonitor []string, alertsChannel chan<- string) {
 	for {
 		for _, ticker := range stocksToMonitor {
@@ -35,34 +34,32 @@ func monitorStocks(stocksToMonitor []string, alertsChannel chan<- string) {
 			fmt.Printf("Current price of %s is %.2f\n", ticker, price)
 
 			if price > 1000 {
-				alertsChannel <- fmt.Sprintf("High price alert for %s: %.2f", ticker, price)
+				var alertMsg strings.Builder
+				alertMsg.WriteString("High price alert for ")
+				alertMsg.WriteString(ticker)
+				alertMsg.WriteString(fmt.Sprintf(": %.2f", price))
+				alertsChannel <- alertMsg.String()
 			}
 		}
 		time.Sleep(1 * time.Minute)
 	}
 }
 
-// fetchStockPrice simulates fetching the current stock price
-// Note: Integrate with a real API for actual stock prices
 func fetchStockPrice(ticker string) (float64, error) {
-	// Placeholder implementation
 	return 1234.56, nil
 }
 
-// receiveAlerts listens for alerts and prints them
 func receiveAlerts(alertsChannel <-chan string) {
-	for {
-		alertMsg := <-alertsChannel
+	for alertMsg := range alertsChannel {
 		fmt.Println("ALERT:", alertMsg)
 	}
 }
 
 func main() {
 	envStockSymbols := os.Getenv("STOCK_SYMBOLS")
-	// Assuming STOCK_SYMBOLS are comma-separated, split into a slice
 	stockSymbolsList := strings.Split(envStockSymbols, ",")
 
-	alertsChannel := make(chan string)
+	alertsChannel := make(chan string, 10)
 
 	go monitorStocks(stockSymbolsList, alertsChannel)
 	go receiveAlerts(alertsChannel)
